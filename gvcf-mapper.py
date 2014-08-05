@@ -52,6 +52,7 @@ This is a modified version of the simple gvcf conversion script.  It uses the re
 import os
 import re
 import sys
+import pdb
 
 # Constants
 INPUT_FILE_KEY = "map_input_file"
@@ -77,7 +78,6 @@ total_count = 0
 # Using global variables in an effort to keep this script simple
 g_start_block = None
 g_end_block = None
-filtered_reads = open("Filtered_VCFs.vcf", "w+")
 
 def main():
   """Entry point to the script."""
@@ -174,7 +174,8 @@ def emit_block(key):
   Args:
     key: (string) the key upon which to sort prior to the reduce step
 
-  Returns: n/a
+  Returns
+  : n/a
 
   Side Effects:
     global variables are modified
@@ -232,8 +233,15 @@ def is_variant(fields):
 
 def meets_filter_criteria(fields):
   """
-   filter criteria 1:  
+   filter criteria 1: (returns true if)
+   if ALT field is . (Mean a reference call) then
+   check that the values if the INFO field meet the following requirements:
+   1) MQ0 greater than or = to 4
+   2) MQ greater than or = to 30
+   3) QUAL greater than or = to 30
   """
+  if fields[ALT] != ".":
+    return True
   if fields[ALT] == ".":    # Means it is a reference call Now to check the values meet our threshold
     ##Preprocessing: Takes the string value of INFO column (field[INFO]) and converts into dict as Key, Value based on the =
     info_string_items = [s for s in fields[INFO].split(';') if s]
@@ -246,7 +254,10 @@ def meets_filter_criteria(fields):
         pass  #Exception handling for keys without values, Specifically 'DB' in the INFO string
     
     ## Processing the above dict to meet criteria.
-    if float(variant_info_dict['MQ0']) <= '4' and float(variant_info_dict['MQ']) <= '30' and float(fields[QUAL]) <= 30:
+    if float(variant_info_dict['MQ0']) < '4' and float(variant_info_dict['MQ']) >= '30' and float(fields[QUAL]) >= 30:
+      vcf_count =+ 1
+      return True
+    else:
       filtered_count =+ 1
       return False
   else:
