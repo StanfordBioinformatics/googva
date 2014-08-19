@@ -238,7 +238,7 @@ def meets_filter_criteria(fields):
    check that the values if the INFO field meet the following requirements:
    1) MQ0 greater than or = to 4
    2) MQ greater than or = to 30
-   3) QUAL greater than or = to 30
+        Legacy) QUAL greater than or = to 30   #DS Removed 8/19/2014 as advised by Cuiping
   """
   if fields[ALT] != ".":
     return True
@@ -254,7 +254,7 @@ def meets_filter_criteria(fields):
         pass  #Exception handling for keys without values, Specifically 'DB' in the INFO string
     
     ## Processing the above dict to meet criteria.
-    if float(variant_info_dict['MQ0']) < '4' and float(variant_info_dict['MQ']) >= '30' and float(fields[QUAL]) >= 30:
+    if float(variant_info_dict['MQ0']) < '4' and float(variant_info_dict['MQ']) >= '30':   #and float(fields[QUAL]) >= 30:  -> DS Removed 8/19/2014 as advised by Cuiping
       vcf_count =+ 1
       return True
     else:
