@@ -120,7 +120,8 @@ def main():
           emit(sample_id, line)
     else:
       # Gather information about this VCF line in our non-variant region
-      accumulate_block(fields)
+      if meets_filter_criteria(fields) == True:
+        accumulate_block(fields)
 
     line = file_handle.readline()
 
@@ -241,7 +242,10 @@ def meets_filter_criteria(fields):
         Legacy) QUAL greater than or = to 30   #DS Removed 8/19/2014 as advised by Cuiping
   """
   if fields[ALT] != ".":
-    return True
+    if fields[FILTER] == "PASS":
+      return True
+    else:
+      return False
   if fields[ALT] == ".":    # Means it is a reference call Now to check the values meet our threshold
     ##Preprocessing: Takes the string value of INFO column (field[INFO]) and converts into dict as Key, Value based on the =
     info_string_items = [s for s in fields[INFO].split(';') if s]
