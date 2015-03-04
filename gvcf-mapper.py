@@ -82,6 +82,7 @@ g_end_block = None
 def main():
   """Entry point to the script."""
 
+  global sample_id
   sample_id = None
   sample_id_re = re.compile(SAMPLE_ID_PATTERN)
 
@@ -155,6 +156,9 @@ def accumulate_block(fields):
 
   if g_start_block is None:
     g_start_block = fields
+  elif g_end_block is not None and int(fields[POS]) > int(g_end_block[POS]) + 1:
+      emit_block(sample_id)
+      g_start_block = fields
   else:
     g_end_block = fields
 
@@ -237,9 +241,9 @@ def meets_filter_criteria(fields):
    filter criteria 1: (returns true if)
    if ALT field is . (Mean a reference call) then
    check that the values if the INFO field meet the following requirements:
-   1) MQ0 greater than or = to 4
+   1) MQ0 less than or = to 4
    2) MQ greater than or = to 30
-        Legacy) QUAL greater than or = to 30   #DS Removed 8/19/2014 as advised by Cuiping
+   3) QUAL greater than or = to 30
   """
   if fields[ALT] != ".":
     if fields[FILTER] == "PASS":
@@ -258,7 +262,7 @@ def meets_filter_criteria(fields):
         pass  #Exception handling for keys without values, Specifically 'DB' in the INFO string
     
     ## Processing the above dict to meet criteria.
-    if float(variant_info_dict['MQ0']) < '4' and float(variant_info_dict['MQ']) >= '30':   #and float(fields[QUAL]) >= 30:  -> DS Removed 8/19/2014 as advised by Cuiping
+    if float(variant_info_dict['MQ0']) <= 4 and float(variant_info_dict['MQ']) >= 30 and float(fields[QUAL]) >= 30:
       vcf_count =+ 1
       return True
     else:
