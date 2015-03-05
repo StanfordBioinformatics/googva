@@ -307,7 +307,7 @@ def meets_filter_criteria(fields):
 
 def info_to_dict(fields):
   ##Preprocessing: Takes the string value of INFO column (field[INFO]) and converts into dict as Key, Value based on the =
-  # info_string_items = [s for s in fields[INFO].split(';') if s]
+  info_string_items = [s for s in fields[INFO].split(';') if s]
   variant_info_dict = {}
   for item in info_string_items:
     try:
