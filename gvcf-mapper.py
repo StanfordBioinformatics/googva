@@ -82,6 +82,7 @@ min_qual = None
 min_depth = None
 min_mq = None
 max_mq0 = None
+ref_block = None
 
 def main():
   """Entry point to the script."""
@@ -123,17 +124,21 @@ def main():
           # applicable, followed by this VCF line
           emit_block(sample_id)
           emit(sample_id, line)
+        else:
+          accumulate_block(fields, no_call=True)
     else:
       # Gather information about this VCF line in our non-variant region
       if meets_filter_criteria(fields) == True:
         accumulate_block(fields)
+      else:
+        accumulate_block(fields, no_call=True)
 
     line = file_handle.readline()
 
   # Emit the final block, if applicable
   emit_block(sample_id)
 
-def accumulate_block(fields):
+def accumulate_block(fields, no_call=False):
   """Accumulates data from each record in a non-variant region.
 
   Every consecutive VCF record in a non-variant region is passed to
@@ -161,7 +166,22 @@ def accumulate_block(fields):
   global min_depth
   global min_mq
   global max_mq0
+  global ref_block
 
+  # Check to see if the current block matches what we want to add to it
+  if no_call is True and ref_block is True:
+    emit_block(sample_id)
+  elif no_call is False and ref_block is False:
+    emit_block(sample_id)
+
+  # If this is the first line in a no call block set the genotype to ./.
+  if no_call is True and ref_block is None:
+    fields[GENOTYPE] = './.'
+    ref_block = False
+  elif no_call is False and ref_block is None:
+    ref_block = True
+
+  # Set start and end points of block as necessary
   if g_start_block is None:
     g_start_block = fields
   elif g_end_block is not None and int(fields[POS]) > int(g_end_block[POS]) + 1:
@@ -170,8 +190,8 @@ def accumulate_block(fields):
   else:
     g_end_block = fields
 
+  # Check max/min values of certain metrics
   variant_info_dict = info_to_dict(fields)
-
   min_qual = check_values(min_qual, fields[QUAL])
   min_depth = check_values(min_depth, variant_info_dict['DP'])
   min_mq = check_values(min_mq, variant_info_dict['MQ'])
@@ -181,6 +201,8 @@ def check_values(existing, new, min=True):
   if existing is None:
     existing = new
   else:
+    existing = float(existing)
+    new = float(new)
     if min is True:
       if existing > new:
         existing = new
@@ -218,6 +240,7 @@ def emit_block(key):
   global min_depth
   global min_mq
   global max_mq0
+  global ref_block
 
   if g_start_block is None:
     return
@@ -229,13 +252,18 @@ def emit_block(key):
   else:
     block_fields[INFO] = "END=" + g_end_block[POS]
 
-  block_fields[INFO] += ";DP=" + min_depth
-  block_fields[INFO] += ";MQ=" + min_mq
-  block_fields[INFO] += ";MQ0=" + max_mq0
-  block_fields[QUAL] = min_qual
+  block_fields[INFO] += ";DP=" + str(min_depth)
+  block_fields[INFO] += ";MQ=" + str(min_mq)
+  block_fields[INFO] += ";MQ0=" + str(max_mq0)
+  block_fields[QUAL] = str(min_qual)
+
+  if ref_block is False:
+    block_fields[FORMAT] = "GT"
+    block_fields[GENOTYPE] = "./."
 
   line = "\t".join(block_fields)
   emit(key, line)
+
   # Reset our block state
   g_start_block = None
   g_end_block = None
@@ -243,6 +271,7 @@ def emit_block(key):
   min_qual = None
   min_mq = None
   max_mq0 = None
+  ref_block = None
 
 
 def emit(key, line):
