@@ -192,17 +192,18 @@ def accumulate_block(fields, no_call=False):
 
   # Check max/min values of certain metrics
   variant_info_dict = info_to_dict(fields)
-  min_qual = check_values(min_qual, fields[QUAL])
-  min_depth = check_values(min_depth, variant_info_dict['DP'])
-  min_mq = check_values(min_mq, variant_info_dict['MQ'])
-  max_mq0 = check_values(max_mq0, variant_info_dict['MQ0'], min=False)
+  min_qual = check_values(min_qual, fields[QUAL], "QUAL")
+  min_depth = check_values(min_depth, variant_info_dict['DP'], "DP")
+  min_mq = check_values(min_mq, variant_info_dict['MQ'], "MQ")
+  max_mq0 = check_values(max_mq0, variant_info_dict['MQ0'], "MQ0", min=False)
 
-def check_values(existing, new, min=True):
+def check_values(existing, new, metric, min=True):
   if existing is None:
     existing = new
   else:
-    existing = float(existing)
-    new = float(new)
+    type = metric_type(metric)
+    existing = type(existing)
+    new = type(new)
     if min is True:
       if existing > new:
         existing = new
@@ -210,6 +211,17 @@ def check_values(existing, new, min=True):
       if existing < new:
         existing = new
   return existing
+
+def metric_type(metric):
+  metric_key = {
+    "QUAL": float,
+    "DP": int,
+    "MQ": float,
+    "MQ0": int
+  }
+  if not metric in metric_key:
+    raise Exception("No type exists for %s" % metric)
+  return metric_key[metric]
 
 def emit_block(key):
   """Emits the current non-variant block, if applicable.
