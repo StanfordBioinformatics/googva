@@ -184,6 +184,7 @@ def accumulate_block(fields, no_call=False):
   # Set start and end points of block as necessary
   if g_start_block is None:
     g_start_block = fields
+    g_end_block = fields
   elif g_end_block is not None and int(fields[POS]) > int(g_end_block[POS]) + 1:
       emit_block(sample_id)
       g_start_block = fields
@@ -260,7 +261,7 @@ def emit_block(key):
   block_fields = g_start_block
 
   if g_end_block is None:
-    block_fields[INFO] = "END=" + str(int(g_start_block[POS]) + 1)
+    block_fields[INFO] = "END=" + g_start_block[POS]
   else:
     block_fields[INFO] = "END=" + g_end_block[POS]
 
