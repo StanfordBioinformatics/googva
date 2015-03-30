@@ -186,8 +186,13 @@ def accumulate_block(fields, no_call=False):
     g_start_block = fields
     g_end_block = fields
   elif g_end_block is not None and int(fields[POS]) > int(g_end_block[POS]) + 1:
-      emit_block(sample_id)
-      g_start_block = fields
+    emit_block(sample_id)
+    g_start_block = fields
+    # Emit resets ref_block, need to set again
+    if no_call is True:
+      ref_block = False
+    else:
+      ref_block = True
   else:
     g_end_block = fields
 
