@@ -93,6 +93,7 @@ def main():
 
   # Basic parsing of command line arguments to allow a filename
   # to be passed when running this code in the debugger.
+  path = None
   file_handle = sys.stdin
   if 2 <= len(sys.argv):
     path = sys.argv[1]
@@ -101,8 +102,10 @@ def main():
     path = os.environ[INPUT_FILE_KEY]
     print >> sys.stderr, path
 
-  match = sample_id_re.search(path)
-  sample_id = match.group(1)
+  if path is not None:
+    match = sample_id_re.search(path)
+    if match:
+        sample_id = match.group(1)
 
   # Loop over each line of the VCF
   line = file_handle.readline()
