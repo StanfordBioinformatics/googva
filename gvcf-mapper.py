@@ -71,17 +71,17 @@ INFO = 7
 FORMAT = 8
 GENOTYPE = 9
 
-vcf_count = 0
-filtered_count = 0
-total_count = 0
+#vcf_count = 0
+#filtered_count = 0
+#total_count = 0
 
 # Using global variables in an effort to keep this script simple
 g_start_block = None
 g_end_block = None
-min_qual = None
-min_depth = None
-min_mq = None
-max_mq0 = None
+#min_qual = None
+#min_depth = None
+#min_mq = None
+#max_mq0 = None
 ref_block = None
 
 def main():
@@ -110,7 +110,7 @@ def main():
   # Loop over each line of the VCF
   line = file_handle.readline()
   while line:
-    total_count =+ 1
+    #total_count =+ 1
     line = line.strip()
     if not line:
       continue
@@ -165,10 +165,10 @@ def accumulate_block(fields, no_call=False):
   """
   global g_start_block
   global g_end_block
-  global min_qual
-  global min_depth
-  global min_mq
-  global max_mq0
+  #global min_qual
+  #global min_depth
+  #global min_mq
+  #global max_mq0
   global ref_block
 
   # Check to see if the current block matches what we want to add to it
@@ -199,12 +199,12 @@ def accumulate_block(fields, no_call=False):
   else:
     g_end_block = fields
 
-  # Check max/min values of certain metrics
-  variant_info_dict = info_to_dict(fields)
-  min_qual = check_values(min_qual, fields[QUAL], "QUAL")
-  min_depth = check_values(min_depth, variant_info_dict['DP'], "DP")
-  min_mq = check_values(min_mq, variant_info_dict['MQ'], "MQ")
-  max_mq0 = check_values(max_mq0, variant_info_dict['MQ0'], "MQ0", min=False)
+  ## Check max/min values of certain metrics
+  #variant_info_dict = info_to_dict(fields)
+  #min_qual = check_values(min_qual, fields[QUAL], "QUAL")
+  #min_depth = check_values(min_depth, variant_info_dict['DP'], "DP")
+  #min_mq = check_values(min_mq, variant_info_dict['MQ'], "MQ")
+  #max_mq0 = check_values(max_mq0, variant_info_dict['MQ0'], "MQ0", min=False)
 
 def check_values(existing, new, metric, min=True):
   if existing is None:
@@ -257,10 +257,10 @@ def emit_block(key):
   """
   global g_start_block
   global g_end_block
-  global min_qual
-  global min_depth
-  global min_mq
-  global max_mq0
+  #global min_qual
+  #global min_depth
+  #global min_mq
+  #global max_mq0
   global ref_block
 
   if g_start_block is None:
@@ -273,10 +273,10 @@ def emit_block(key):
   else:
     block_fields[INFO] = "END=" + g_end_block[POS]
 
-  block_fields[INFO] += ";DP=" + str(min_depth)
-  block_fields[INFO] += ";MQ=" + str(min_mq)
-  block_fields[INFO] += ";MQ0=" + str(max_mq0)
-  block_fields[QUAL] = str(min_qual)
+  #block_fields[INFO] += ";DP=" + str(min_depth)
+  #block_fields[INFO] += ";MQ=" + str(min_mq)
+  #block_fields[INFO] += ";MQ0=" + str(max_mq0)
+  #block_fields[QUAL] = str(min_qual)
 
   if ref_block is False:
     block_fields[FORMAT] = "GT"
@@ -288,10 +288,10 @@ def emit_block(key):
   # Reset our block state
   g_start_block = None
   g_end_block = None
-  min_depth = None
-  min_qual = None
-  min_mq = None
-  max_mq0 = None
+  #min_depth = None
+  #min_qual = None
+  #min_mq = None
+  #max_mq0 = None
   ref_block = None
 
 
@@ -345,13 +345,13 @@ def meets_filter_criteria(fields):
 
     ## Processing the above dict to meet criteria.
     if float(variant_info_dict['MQ0']) < 4 and float(variant_info_dict['MQ']) >= 30 and float(fields[QUAL]) >= 30:
-      vcf_count =+ 1
+      #vcf_count =+ 1
       return True
     else:
-      filtered_count =+ 1
+      #filtered_count =+ 1
       return False
   else:
-    vcf_count =+ 1
+    #vcf_count =+ 1
     return True
   return True
 
