@@ -64,10 +64,7 @@ INFO = 7
 FORMAT = 8
 GENOTYPE = 9
 
-#vcf_count = 0
-#filtered_count = 0
-#total_count = 0
-
+# Using global variables in an effort to keep this script simple
 # Counters
 snp_count = 0
 indel_count = 0
@@ -76,8 +73,7 @@ filtered_snp_count = 0
 filtered_indel_count = 0
 filtered_ref_count = 0
 
-
-# Using global variables in an effort to keep this script simple
+# Block tracking
 g_start_block = None
 g_end_block = None
 ref_block = None
@@ -116,7 +112,6 @@ def main():
   # Loop over each line of the VCF
   line = file_handle.readline()
   while line:
-    #total_count =+ 1
     line = line.strip()
     if not line:
       continue
@@ -355,13 +350,10 @@ def meets_filter_criteria(fields):
 
     ## Processing the above dict to meet criteria.
     if float(variant_info_dict['MQ0']) < 4 and float(variant_info_dict['MQ']) >= 30 and float(fields[QUAL]) >= 30:
-      #vcf_count =+ 1
       return True
     else:
-      #filtered_count =+ 1
       return False
   else:
-    #vcf_count =+ 1
     return True
   return True
 
