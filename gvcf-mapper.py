@@ -20,13 +20,6 @@ called.  This script converts those files to gVCF format.
 Assumptions:
 - one sample per input VCF
 
-TODO(Cuiping and Denis):
- (1) Add logic for VCF block records such as depth and genotype quality.  For
-     more detail, see https://sites.google.com/site/gvcftools/home/about-gvcf
-     and http://www.broadinstitute.org/gatk/guide/article?id=4017
- (2) Use your favority python unit test framework to add some tests for the
-     logic to collapse contiguous non-variant calls into a VCF block record.
-
 This script can be run standalone:
    zcat chr21.vcf.gz | ./gvcf-mapper.py
 
@@ -75,13 +68,18 @@ GENOTYPE = 9
 #filtered_count = 0
 #total_count = 0
 
+# Counters
+snp_count = 0
+indel_count = 0
+ref_count = 0
+filtered_snp_count = 0
+filtered_indel_count = 0
+filtered_ref_count = 0
+
+
 # Using global variables in an effort to keep this script simple
 g_start_block = None
 g_end_block = None
-#min_qual = None
-#min_depth = None
-#min_mq = None
-#max_mq0 = None
 ref_block = None
 
 def main():
@@ -90,6 +88,14 @@ def main():
   global sample_id
   sample_id = None
   sample_id_re = re.compile(SAMPLE_ID_PATTERN)
+
+  # Global counters
+  global snp_count
+  global indel_count
+  global ref_count
+  global filtered_snp_count
+  global filtered_indel_count
+  global filtered_ref_count
 
   # Basic parsing of command line arguments to allow a filename
   # to be passed when running this code in the debugger.
@@ -122,24 +128,45 @@ def main():
 
     fields = line.split("\t")
     if is_variant(fields):
-        if meets_filter_criteria(fields) == True:
-          # This is a variant, emit the preceeding non-variant region VCF block, if
-          # applicable, followed by this VCF line
-          emit_block(sample_id)
-          emit(sample_id, line)
-        else:
-          accumulate_block(fields, no_call=True)
+      snp = is_snp(fields)
+      if snp is True:
+        snp_count += 1
+      elif snp is False:
+        indel_count += 1
+
+      if meets_filter_criteria(fields) == True:
+        # This is a variant, emit the preceeding non-variant region VCF block, if
+        # applicable, followed by this VCF line
+        emit_block(sample_id)
+        emit(sample_id, line)
+      else:
+        if snp is True:
+          filtered_snp_count += 1
+        elif snp is False:
+          filtered_indel_count += 1
+
+        accumulate_block(fields, no_call=True)
     else:
+      ref_count += 1
       # Gather information about this VCF line in our non-variant region
       if meets_filter_criteria(fields) == True:
         accumulate_block(fields)
       else:
+        filtered_ref_count += 1
         accumulate_block(fields, no_call=True)
 
     line = file_handle.readline()
 
   # Emit the final block, if applicable
   emit_block(sample_id)
+
+  # Emit counts
+  emit("ref_count", ref_count)
+  emit("snp_count", snp_count)
+  emit("indel_count", indel_count)
+  emit("filtered_ref_count", filtered_ref_count)
+  emit("filtered_snp_count", filtered_snp_count)
+  emit("filtered_indel_count", filtered_indel_count)
 
 def accumulate_block(fields, no_call=False):
   """Accumulates data from each record in a non-variant region.
@@ -165,10 +192,6 @@ def accumulate_block(fields, no_call=False):
   """
   global g_start_block
   global g_end_block
-  #global min_qual
-  #global min_depth
-  #global min_mq
-  #global max_mq0
   global ref_block
 
   # Check to see if the current block matches what we want to add to it
@@ -198,13 +221,6 @@ def accumulate_block(fields, no_call=False):
       ref_block = True
   else:
     g_end_block = fields
-
-  ## Check max/min values of certain metrics
-  #variant_info_dict = info_to_dict(fields)
-  #min_qual = check_values(min_qual, fields[QUAL], "QUAL")
-  #min_depth = check_values(min_depth, variant_info_dict['DP'], "DP")
-  #min_mq = check_values(min_mq, variant_info_dict['MQ'], "MQ")
-  #max_mq0 = check_values(max_mq0, variant_info_dict['MQ0'], "MQ0", min=False)
 
 def check_values(existing, new, metric, min=True):
   if existing is None:
@@ -257,10 +273,6 @@ def emit_block(key):
   """
   global g_start_block
   global g_end_block
-  #global min_qual
-  #global min_depth
-  #global min_mq
-  #global max_mq0
   global ref_block
 
   if g_start_block is None:
@@ -273,11 +285,6 @@ def emit_block(key):
   else:
     block_fields[INFO] = "END=" + g_end_block[POS]
 
-  #block_fields[INFO] += ";DP=" + str(min_depth)
-  #block_fields[INFO] += ";MQ=" + str(min_mq)
-  #block_fields[INFO] += ";MQ0=" + str(max_mq0)
-  #block_fields[QUAL] = str(min_qual)
-
   if ref_block is False:
     block_fields[FORMAT] = "GT"
     block_fields[GENOTYPE] = "./."
@@ -288,10 +295,6 @@ def emit_block(key):
   # Reset our block state
   g_start_block = None
   g_end_block = None
-  #min_depth = None
-  #min_qual = None
-  #min_mq = None
-  #max_mq0 = None
   ref_block = None
 
 
@@ -324,6 +327,13 @@ def is_variant(fields):
   if "0|0" in fields[GENOTYPE] or "0/0" in fields[GENOTYPE]:
     return False
   return True
+
+def is_snp(fields):
+  if len(fields[ALT]) == 1:
+    return True
+  elif len(fields[ALT]) > 1:
+    return False
+  return None
 
 def meets_filter_criteria(fields):
   """
