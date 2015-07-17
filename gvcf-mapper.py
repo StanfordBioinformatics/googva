@@ -66,14 +66,6 @@ GENOTYPE = 9
 
 # Using global variables in an effort to keep this script simple
 # Counters
-snp_count = 0
-indel_count = 0
-ref_count = 0
-filtered_snp_count = 0
-filtered_indel_count = 0
-filtered_ref_count = 0
-
-# Block tracking
 g_start_block = None
 g_end_block = None
 ref_block = None
@@ -84,14 +76,6 @@ def main():
   global sample_id
   sample_id = None
   sample_id_re = re.compile(SAMPLE_ID_PATTERN)
-
-  # Global counters
-  global snp_count
-  global indel_count
-  global ref_count
-  global filtered_snp_count
-  global filtered_indel_count
-  global filtered_ref_count
 
   # Basic parsing of command line arguments to allow a filename
   # to be passed when running this code in the debugger.
@@ -123,45 +107,17 @@ def main():
 
     fields = line.split("\t")
     if is_variant(fields):
-      snp = is_snp(fields)
-      if snp is True:
-        snp_count += 1
-      elif snp is False:
-        indel_count += 1
-
-      if meets_filter_criteria(fields) == True:
-        # This is a variant, emit the preceeding non-variant region VCF block, if
-        # applicable, followed by this VCF line
-        emit_block(sample_id)
-        emit(sample_id, line)
-      else:
-        if snp is True:
-          filtered_snp_count += 1
-        elif snp is False:
-          filtered_indel_count += 1
-
-        accumulate_block(fields, no_call=True)
+      emit_block(sample_id)
+      emit(sample_id, line)
     else:
-      ref_count += 1
       # Gather information about this VCF line in our non-variant region
-      if meets_filter_criteria(fields) == True:
-        accumulate_block(fields)
-      else:
-        filtered_ref_count += 1
-        accumulate_block(fields, no_call=True)
+      accumulate_block(fields)
 
     line = file_handle.readline()
 
   # Emit the final block, if applicable
   emit_block(sample_id)
 
-  # Emit counts
-  emit("ref_count", ref_count)
-  emit("snp_count", snp_count)
-  emit("indel_count", indel_count)
-  emit("filtered_ref_count", filtered_ref_count)
-  emit("filtered_snp_count", filtered_snp_count)
-  emit("filtered_indel_count", filtered_indel_count)
 
 def accumulate_block(fields, no_call=False):
   """Accumulates data from each record in a non-variant region.
