@@ -88,6 +88,8 @@ def main():
     path = os.environ[INPUT_FILE_KEY]
     print >> sys.stderr, path
 
+  # todo
+  # Update this for a more generic sample id
   if path is not None:
     match = sample_id_re.search(path)
     if match:
@@ -232,9 +234,11 @@ def emit_block(key):
   block_fields = g_start_block
 
   if g_end_block is None:
-    block_fields[INFO] = "END=" + g_start_block[POS]
+    end = int(g_start_block[POS]) + len(g_start_block[REF]) - 1
+    block_fields[INFO] = "END=" + str(end)
   else:
-    block_fields[INFO] = "END=" + g_end_block[POS]
+    end = int(g_end_block[POS]) + len(g_end_block[REF]) - 1
+    block_fields[INFO] = "END=" + str(end)
 
   if ref_block is False:
     block_fields[FORMAT] = "GT"
@@ -300,17 +304,18 @@ def meets_filter_criteria(fields):
       return True
     else:
       return False
-  if fields[ALT] == ".":    # Means it is a reference call Now to check the values meet our threshold
-
-    variant_info_dict = info_to_dict(fields)
-
-    ## Processing the above dict to meet criteria.
-    if float(variant_info_dict['MQ0']) < 4 and float(variant_info_dict['MQ']) >= 30 and float(fields[QUAL]) >= 30:
-      return True
-    else:
-      return False
-  else:
-    return True
+  #### No more checking quality or reference calls ####
+  #if fields[ALT] == ".":    # Means it is a reference call Now to check the values meet our threshold
+  #
+  #  variant_info_dict = info_to_dict(fields)
+  #
+  #  ## Processing the above dict to meet criteria.
+  #  if float(variant_info_dict['MQ0']) < 4 and float(variant_info_dict['MQ']) >= 30 and float(fields[QUAL]) >= 30:
+  #    return True
+  #  else:
+  #    return False
+  #else:
+  #  return True
   return True
 
 def info_to_dict(fields):
