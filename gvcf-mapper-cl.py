@@ -26,6 +26,7 @@ import re
 import sys
 import pdb
 import argparse
+import gzip
 
 # Constants
 INPUT_FILE_KEY = "map_input_file"
@@ -61,21 +62,28 @@ class gVCFMapper(object):
 
   def run(self):
     # Loop over each line of the VCF
-    with open(self.input) as f:
-      for line in f:
-        line = line.rstrip()
-        if not line: continue
-        if line.startswith('#'): continue
-        fields = line.split("\t")
-        if self.is_variant(fields):
-          self.emit_block()
-          self.emit(line)
-        else:
-          # Gather information about this VCF line in our non-variant region
-          self.accumulate_block(fields)
+    f = self.open(self.input)
+    #with open(self.input) as f:
+    for line in f:
+      line = line.rstrip()
+      if not line: continue
+      if line.startswith('#'): continue
+      fields = line.split("\t")
+      if self.is_variant(fields):
+        self.emit_block()
+        self.emit(line)
+      else:
+        # Gather information about this VCF line in our non-variant region
+        self.accumulate_block(fields)
 
     # Emit the final block, if applicable
     self.emit_block()
+
+  def open(self, file):
+    if file.endswith('.gz'):
+      return gzip.open(file,'r')
+    else:
+      return open(file)
 
   def accumulate_block(self, fields, no_call=False):
     """Accumulates data from each record in a non-variant region.
@@ -291,11 +299,15 @@ def parse_command_line():
         description = 'Merge reference matching blocks in a gVCF and output a new gVCF.')
     parser.add_argument("-g", "--gVCF", help="gVCF File")
     parser.add_argument("-o", "--output", help="Output File")
-    parser.add_argument("-i", "--sample_id", help="Sample ID")
     parser.add_argument("-d", "--debug", action='store_true', default=False,
                                 help="Output debugging messages.  May be very verbose.")
     options = parser.parse_args()
 
+    if not options.gVCF or not options.output:
+      print "Missing arguments"
+      parser.print_help()
+      exit()
+        
     return options
 
 # Main
