@@ -67,7 +67,9 @@ class gVCFMapper(object):
     for line in f:
       line = line.rstrip()
       if not line: continue
-      if line.startswith('#'): continue
+      if line.startswith('#'):
+        self.emit(line)
+        continue
       fields = line.split("\t")
       if self.is_variant(fields):
         self.emit_block()
@@ -307,7 +309,7 @@ def parse_command_line():
       print "Missing arguments"
       parser.print_help()
       exit()
-        
+
     return options
 
 # Main
