@@ -50,8 +50,8 @@ class gVCFMapper(object):
   def __init__(self, input, output, min_gq=0, min_dp=0, debug=False):
     self.input = input
     self.debug = debug
-    self.min_gq = min_gq
-    self.min_dp = min_dp
+    self.min_gq = int(min_gq)
+    self.min_dp = int(min_dp)
     self.output_fh = open(output, 'w')
 
     self.g_start_block = None
@@ -312,10 +312,10 @@ class gVCFMapper(object):
         return False
       call_info = self.call_info(fields)
       if "GQ" in call_info:
-        if self.min_gq < call_info["GQ"]:
+        if self.min_gq > int(call_info["GQ"]):
           return False
       if "DP" in call_info:
-        if self.min_dp < call_info["DP"]:
+        if self.min_dp > int(call_info["DP"]):
           return False
 
     return True
@@ -349,8 +349,8 @@ def parse_command_line():
         description = 'Merge reference matching blocks in a gVCF and output a new gVCF.')
     parser.add_argument("-g", "--gVCF", help="gVCF File")
     parser.add_argument("-o", "--output", help="Output File")
-    parser.add_argument("--min_gq", help="Minimum GQ value for reference calls")
-    parser.add_argument("--min_dp", help="Minimum DP value for reference calls")
+    parser.add_argument("--min_gq", default=0, help="Minimum GQ value for reference calls")
+    parser.add_argument("--min_dp", default=0, help="Minimum DP value for reference calls")
     parser.add_argument("-d", "--debug", action='store_true', default=False,
                                 help="Output debugging messages.  May be very verbose.")
     options = parser.parse_args()
