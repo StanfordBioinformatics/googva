@@ -63,7 +63,6 @@ class gVCFMapper(object):
   def run(self):
     # Loop over each line of the VCF
     f = self.open(self.input)
-    #with open(self.input) as f:
     for line in f:
       line = line.rstrip()
       if not line: continue
@@ -114,6 +113,8 @@ class gVCFMapper(object):
     if no_call is True and self.ref_block is True:
       self.emit_block()
     elif no_call is False and self.ref_block is False:
+      self.emit_block()
+    elif self.meets_filter_criteria(fields) is False:
       self.emit_block()
 
     # If this is the first line in a no call block set the genotype to ./.
@@ -281,11 +282,11 @@ class gVCFMapper(object):
      2) MQ greater than or = to 30
      3) QUAL greater than or = to 30
     """
-    if fields[ALT] != ".":
-      if fields[FILTER] == "PASS":
-        return True
-      else:
-        return False
+    #if fields[ALT] != ".":
+    #  if fields[FILTER] == "PASS":
+    #    return True
+    #  else:
+    #    return False
     #### No more checking quality or reference calls ####
     #if fields[ALT] == ".":    # Means it is a reference call Now to check the values meet our threshold
     #
@@ -298,6 +299,10 @@ class gVCFMapper(object):
     #    return False
     #else:
     #  return True
+
+    if fields[REF] == 'N':
+      return False
+
     return True
 
   def info_to_dict(self, fields):
