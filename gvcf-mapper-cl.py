@@ -131,7 +131,7 @@ class gVCFMapper(object):
       self.g_start_block = fields
       self.g_end_block = fields
     # Check if calls are adjacent
-    elif not self.g_start_block[CHROM] == self.fields[CHROM] or \
+    elif not self.g_start_block[CHROM] == fields[CHROM] or \
                             self.g_end_block is not None and int(fields[POS]) > int(self.block_end_value(fields)) + 1:
       self.emit_block()
       self.g_start_block = fields
