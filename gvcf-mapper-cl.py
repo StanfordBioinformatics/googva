@@ -47,9 +47,11 @@ GENOTYPE = 9
 
 
 class gVCFMapper(object):
-  def __init__(self, input, output, debug=False):
+  def __init__(self, input, output, min_gq=0, min_dp=0, debug=False):
     self.input = input
     self.debug = debug
+    self.min_gq = min_gq
+    self.min_dp = min_dp
     self.output_fh = open(output, 'w')
 
     self.g_start_block = None
@@ -272,6 +274,10 @@ class gVCFMapper(object):
     if len(fields[ALT]) > 1 or len(fields[REF]) > 1:
       return True
 
+  def is_ref(self, fields):
+    if fields[ALT] in ('.', '<NON_REF>'):
+      return True
+
 
   def meets_filter_criteria(self, fields):
     """
@@ -300,10 +306,20 @@ class gVCFMapper(object):
     #else:
     #  return True
 
-    if fields[REF] == 'N':
-      return False
+    if self.is_ref(fields):
+      if fields[REF] == 'N':
+        return False
+      call_info = self.call_info(fields)
+      if "GQ" in call_info:
+        if self.min_gq < call_info["GQ"]:
+          return False
+      if "DP" in call_info:
+        if self.min_dp < call_info["DP"]:
+          return False
 
     return True
+
+
 
   def info_to_dict(self, fields):
     ##Preprocessing: Takes the string value of INFO column (field[INFO]) and converts into dict as Key, Value based on the =
@@ -317,11 +333,23 @@ class gVCFMapper(object):
         pass  #Exception handling for keys without values, Specifically 'DB' in the INFO string
     return variant_info_dict
 
+  def call_info(self, fields):
+    call_dict = {}
+    format = fields[FORMAT].split(":")
+    values = fields[GENOTYPE].split(":")
+    index = 0
+    for f in format:
+      call_dict[f] = values[index]
+      index += 1
+    return call_dict
+
 def parse_command_line():
     parser = argparse.ArgumentParser(
         description = 'Merge reference matching blocks in a gVCF and output a new gVCF.')
     parser.add_argument("-g", "--gVCF", help="gVCF File")
     parser.add_argument("-o", "--output", help="Output File")
+    parser.add_argument("--min_gq", help="Minimum GQ value for reference calls")
+    parser.add_argument("--min_dp", help="Minimum DP value for reference calls")
     parser.add_argument("-d", "--debug", action='store_true', default=False,
                                 help="Output debugging messages.  May be very verbose.")
     options = parser.parse_args()
@@ -336,4 +364,4 @@ def parse_command_line():
 # Main
 if __name__ == "__main__":
   options = parse_command_line()
-  gVCFMapper(options.gVCF, options.output, options.debug)
+  gVCFMapper(options.gVCF, options.output, options.min_gq, options.min_dp, options.debug)
