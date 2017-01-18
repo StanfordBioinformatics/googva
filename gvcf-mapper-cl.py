@@ -128,7 +128,7 @@ class gVCFMapper(object):
       self.g_start_block = fields
       self.g_end_block = fields
     # Check if calls are adjacent
-    elif self.g_end_block is not None and int(fields[POS]) > int(self.g_end_block[POS]) + 1:
+    elif self.g_end_block is not None and int(fields[POS]) > int(self.block_end_value(fields)) + 1:
       self.emit_block()
       self.g_start_block = fields
       # Emit resets ref_block, need to set again
@@ -138,6 +138,13 @@ class gVCFMapper(object):
         self.ref_block = True
     else:
       self.g_end_block = fields
+
+  def block_end_value(self, fields):
+    info_dict = self.info_to_dict(fields)
+    if "END" in info_dict:
+      return info_dict["END"]
+    else:
+      return fields[POS]
 
   def check_values(self, existing, new, metric, min=True):
     if existing is None:
@@ -201,8 +208,8 @@ class gVCFMapper(object):
     #else:
 
     if self.g_end_block:
-      end = int(self.g_end_block[POS]) + len(self.g_end_block[REF]) - 1
-      block_fields[INFO] = "END=" + str(end)
+      end = int(self.block_end_value(self.g_end_block)) + len(self.g_end_block[REF]) - 1
+      block_fields[INFO] = "END=" + str(end) #
 
     if self.ref_block is False:
       block_fields[FORMAT] = "GT"
@@ -247,7 +254,7 @@ class gVCFMapper(object):
       return False
     return True
 
-  def is_snp(fields):
+  def is_snp(self, fields):
     if len(fields[ALT]) == 1:
       return True
     elif len(fields[ALT]) > 1:
@@ -255,6 +262,15 @@ class gVCFMapper(object):
     elif len(fields[REF]) > 1:
       return False
     return None
+
+  def is_indel(self, fields):
+    if fields[ALT] == '<NON_REF>':
+      return False
+    if len(fields[ALT]) == 1 and len(fields[REF]) == 1:
+      return False
+    if len(fields[ALT]) > 1 or len(fields[REF]) > 1:
+      return True
+
 
   def meets_filter_criteria(self, fields):
     """
